@@ -1,14 +1,7 @@
 - connection: thelook
 
-- include: "order_items.view.lookml"        # include order_items view
-- include: "inventory_items.view.lookml"    # include inventory_items view
-- include: "products.view.lookml"           # include products view
-- include: "user_data.view.lookml"          # include user_data view
-- include: "users_nn.view.lookml"           # include users without PII view
-- include: "users_detail.view.lookml"       # include users detail view with PII
-- include: "order_facts.view.lookml"        # include order_facts view
-- include: "product_targets.view.lookml"    # include product_targets view
-- include: "*persist_test.view.lookml"
+- include: "*.view.lookml"        # include order_items view
+
 - include: "*.dashboard.lookml"             # include all the dashboards
 
 ######## Inventory Items Explore ########
@@ -23,6 +16,7 @@
 ######## Orders Explore ########
 
 - explore: order_items
+#   fields: [ALL_FIELDS*, -order_items.count_of_women]
   sql_always_where: ${users.id} != 1       #### Remove test user from data ####
 #   always_filter: 
 #     order_facts.is_before_mtd: true
@@ -45,9 +39,14 @@
       relationship: many_to_one
 
     - join: users
-      from: users_nn
+      from: users_detail
       type: left_outer 
       sql_on: ${order_facts.user_id} = ${users.id}
+      relationship: many_to_one
+      
+    - join: user_facts
+      type: left_outer
+      sql_on: ${order_facts.user_id} = ${user_facts.id}
       relationship: many_to_one
       
     - join: user_data

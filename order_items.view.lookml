@@ -101,6 +101,12 @@
     sql: ${count}/${order_facts.gross_order_count}
     value_format_name: decimal_2
     
+  - measure: count_of_women
+    type: count
+    filters:
+      users.gender: 'f'
+    
+    
 # ----- Sets of fields for drilling ------
   sets:
     product_detail:

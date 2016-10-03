@@ -72,7 +72,7 @@
     type: number
     sql: ${order_facts.gross_order_count}/${count}
     value_format_name: decimal_2
-    
+
 
   # ----- Sets of fields for drilling ------
   sets:

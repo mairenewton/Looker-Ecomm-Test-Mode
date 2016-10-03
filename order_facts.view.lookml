@@ -1,32 +1,75 @@
-- view: order_facts
+- view: order_value
   derived_table:
     sql: |
       SELECT
+         i.order_id AS id
+        ,sum(i.sale_price) AS order_sale_price
+        ,count(distinct i.id) AS items_per_order
+      FROM order_items i
+
+
+  
+##### In redshift: #####
+  # derived_table:
+  #   sql_trigger_value: SELECT MAX(id) FROM orders
+  #   indexes: [id]
+  #   sql: |
+  #     SELECT 
+  #       o.id AS id
+  #       ,o.created_at
+  #       ,o.status
+  #       ,o.user_id
+  #       ,rank() over (partition by o.user_id order by o.created_at asc) AS order_number
+  #       ,max.max_date
+  #       ,sum(i.sale_price) AS order_sale_price
+  #       ,count(distinct i.id) AS items_per_order
+  #     FROM orders AS o
+  #     LEFT JOIN order_items i
+  #     ON o.id = i.id
+  #     CROSS JOIN
+  #         (SELECT
+  #           MAX(orders.created_at) AS max_date
+  #         FROM orders) max
+  #     ORDER BY user_id ASC, order_number ASC
+  
+
+
+- view: order_facts
+  derived_table:
+    sql_trigger_value: SELECT MAX(id) FROM orders
+    indexes: [id]
+    sql: |
+      SELECT 
          o.id AS id
         ,o.created_at
         ,o.status
         ,o.user_id
+        ,(SELECT COUNT(*) + 1
+          FROM orders
+          WHERE created_at < o.created_at AND user_id = o.user_id
+          ORDER BY created_at ASC
+          ) AS order_number
         ,max.max_date
-        ,sum(i.sale_price) AS order_sale_price
-        ,count(distinct i.id) AS items_per_order
-      FROM order_items i
-      LEFT JOIN orders o
-      ON i.order_id = o.id
+        ,order_value.order_sale_price
+        ,order_value.items_per_order
+      FROM orders AS o
+      LEFT JOIN ${order_value.SQL_TABLE_NAME} AS order_value
+      ON o.id = order_value.id
       CROSS JOIN
-        (SELECT
-          MAX(orders.created_at) AS max_date
-        FROM orders) max
-      GROUP BY 1, 2, 3, 4, 5
-    sql_trigger_value: SELECT MAX(order.id)
-    indexes: [id]
+          (SELECT
+            MAX(orders.created_at) AS max_date
+          FROM orders) max
+      ORDER BY user_id ASC, order_number ASC
+      
     
   fields:
+
   
 ######## Dimensions ########
   
   - dimension: id
     primary_key: true
-    hidden: true
+    # hidden: true
     type: number
     sql: ${TABLE}.id
 
@@ -36,8 +79,12 @@
 
   - dimension: user_id
     type: number
-    hidden: true
+    # hidden: true
     sql: ${TABLE}.user_id
+    
+  - dimension: order_number_by_user
+    type: number
+    sql: ${TABLE}.order_number
     
 ######## Time Dimensions ########
     
@@ -59,6 +106,10 @@
   - dimension: current_month_flag
     type: yesno
     sql: ${created_month} = ${max_month}
+    
+  - dimension: days_since_signup
+    type: number
+    sql: DATEDIFF(${created_date}, ${users.created_date})
     
 ######## Measures ########
 
