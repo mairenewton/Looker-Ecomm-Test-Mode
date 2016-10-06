@@ -67,7 +67,14 @@
       sql_on: ${inventory_items.product_id} = ${products.id}
       relationship: many_to_one
 
-######## Order Items Detail Data Explore with Added User Information ########
+
+- explore: order_purchase_affinity
+  always_filter: 
+    affinity_timeframe: last 90 days
+  joins:
+    - join: total_orders
+      type: cross
+      relationship: many_to_one
 
 - explore: product_targets
   joins:

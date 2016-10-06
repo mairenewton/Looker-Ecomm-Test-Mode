@@ -2,10 +2,13 @@
   derived_table:
     sql: |
       SELECT
-         i.order_id AS id
+         o.id AS id
         ,sum(i.sale_price) AS order_sale_price
         ,count(distinct i.id) AS items_per_order
       FROM order_items i
+      LEFT JOIN orders o
+      ON i.order_id = o.id
+      GROUP BY id
 
 
   
@@ -41,29 +44,29 @@
     sql: |
       SELECT 
          o.id AS id
-        ,o.created_at
-        ,o.status
-        ,o.user_id
+        ,o.created_at AS created_at
+        ,o.status AS status
+        ,o.user_id AS user_id
         ,(SELECT COUNT(*) + 1
           FROM orders
           WHERE created_at < o.created_at AND user_id = o.user_id
           ORDER BY created_at ASC
-          ) AS order_number
-        ,max.max_date
-        ,order_value.order_sale_price
-        ,order_value.items_per_order
-      FROM orders AS o
+          ) AS user_order_sequence_number
+        ,max.max_date AS max_date
+        ,order_value.order_sale_price AS order_sale_price
+        ,order_value.items_per_order AS items_per_order
+      FROM orders o
       LEFT JOIN ${order_value.SQL_TABLE_NAME} AS order_value
       ON o.id = order_value.id
       CROSS JOIN
           (SELECT
             MAX(orders.created_at) AS max_date
           FROM orders) max
-      ORDER BY user_id ASC, order_number ASC
+      GROUP BY id, user_id
+      ORDER BY user_id ASC, user_order_sequence_number ASC
       
     
   fields:
-
   
 ######## Dimensions ########
   
@@ -82,9 +85,13 @@
     # hidden: true
     sql: ${TABLE}.user_id
     
-  - dimension: order_number_by_user
+  - dimension: user_order_sequence_number
     type: number
-    sql: ${TABLE}.order_number
+    sql: ${TABLE}.user_order_sequence_number
+    
+  - dimension: is_first_purchase
+    type: yesno
+    sql: ${user_order_sequence_number} = 1  
     
 ######## Time Dimensions ########
     
