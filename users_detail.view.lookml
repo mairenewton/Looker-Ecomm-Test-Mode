@@ -63,11 +63,6 @@
     type: number
     sql: datediff(${user_data.first_order_date}, ${created_date})
     
-  - measure: average_days_to_buy
-    type: avg
-    sql: ${days_to_buy}
-    value_format_name: decimal_2
-    
   - measure: transactions_per_user
     type: number
     sql: ${order_facts.gross_order_count}/${count}

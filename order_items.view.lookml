@@ -105,6 +105,12 @@
     type: count
     filters:
       users.gender: 'f'
+    html: |
+      {% if volume._value < 10000 %}
+      <div> null </div>
+      {% else %}
+      <div> {{ rendered_value }}</div>
+      {% endif %}
     
     
 # ----- Sets of fields for drilling ------
